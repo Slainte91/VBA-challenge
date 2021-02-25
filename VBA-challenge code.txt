@@ -1,0 +1,142 @@
+Sub Stocks()
+Dim Ticker As String
+Dim NewTicker As String
+Dim StartPrice As Double
+Dim EndPrice As Double
+Dim GreatestPercentChange As Double
+Dim LeastPercentChange As Double
+Dim GPCTicker As String
+Dim LPCTicker As String
+Dim GreatestTV As Double
+Dim GTVTicker As String
+Dim TotalVolume As Double
+Dim UniqueRow As Integer
+Dim ws As Worksheet
+
+For Each ws In Worksheets
+
+'establish last row in each worksheet
+
+LastRow = ws.Cells(Rows.Count, "A").End(xlUp).Row + 1
+
+'make titles for each column
+ws.Cells(1, 9) = "Ticker"
+ws.Cells(1, 10) = "Yearly Change"
+ws.Cells(1, 11) = "Percent Change"
+ws.Cells(1, 12) = "Total Volume"
+
+'initialize variables
+GreatestTV = 0
+GreatestPercentChange = 0
+LeastPercentChange = 0
+
+'initialize three variables of first ticker with info from worksheet
+StartPrice = ws.Cells(2, 3)
+Ticker = ws.Cells(2, 1)
+TotalVolume = ws.Cells(2, 7)
+
+'establish a unique row number to get each ticker on it's own row
+UniqueRow = 2
+
+For i = 2 To LastRow
+    'create newticker variable to check if current ticker is the same
+    NewTicker = ws.Cells(i, 1)
+    
+    If NewTicker = Ticker Then
+        'add to total volume if the same ticker
+        TotalVolume = TotalVolume + ws.Cells(i, 7)
+        
+        'get new start price if ticker started at 0 for the year and later in the year had a value
+        If StartPrice = 0 Then
+        StartPrice = ws.Cells(i, 3)
+        
+        End If
+            
+    Else
+    'get end price from last row
+        EndPrice = ws.Cells(i - 1, 6)
+        
+        'each ticker gets it's own row
+        ws.Cells(UniqueRow, 9) = Ticker
+        
+        'calculate yearly change
+        ws.Cells(UniqueRow, 10) = EndPrice - StartPrice
+        
+        'fill cell with green if positive and red if 0 or less
+        If ws.Cells(UniqueRow, 10) > 0 Then
+            ws.Cells(UniqueRow, 10).Interior.ColorIndex = 4
+            
+        Else
+            ws.Cells(UniqueRow, 10).Interior.ColorIndex = 3
+            
+        End If
+        
+        'avoid divide by zero error and calculate percent change
+        If StartPrice <> 0 Then
+            ws.Cells(UniqueRow, 11) = ws.Cells(UniqueRow, 10) / StartPrice
+            
+            'if percent change is greater than previous percent change, set greater change equal to our variable along with ticker
+            If ws.Cells(UniqueRow, 11) > GreatestPercentChange Then
+                GreatestPercentChange = ws.Cells(UniqueRow, 11)
+                GPCTicker = Ticker
+            
+            End If
+            'if percent change is less than previous percent change, set least change equal to our variable along with ticker
+            If ws.Cells(UniqueRow, 11) < LeastPercentChange Then
+                LeastPercentChange = ws.Cells(UniqueRow, 11)
+                LPCTicker = Ticker
+                
+            End If
+                    
+        'provide visual of the program not dividing by zero
+        Else
+            ws.Cells(UniqueRow, 11) = "N/A"
+            
+        End If
+        'set cell equal to total volume
+        ws.Cells(UniqueRow, 12) = TotalVolume
+        'if total volume was greater than the last total volume, set variable equal to higher volume along with ticker
+        If TotalVolume > GreatestTV Then
+            GreatestTV = TotalVolume
+            GTVTicker = Ticker
+            
+        End If
+                
+        'get our new variables for new ticker
+        TotalVolume = ws.Cells(i, 7)
+        StartPrice = ws.Cells(i, 3)
+        Ticker = NewTicker
+        
+        'move to next row for next ticker
+        UniqueRow = UniqueRow + 1
+    
+    End If
+    
+    
+Next i
+    'used https://stackoverflow.com/questions/42844778/vba-for-each-cell-in-range-format-as-percentage to come up with numberformat percent
+    ws.Range("K:K").NumberFormat = "0.00%"
+    
+    'establish column titles for our challenge
+    ws.Cells(1, 16) = "Ticker"
+    ws.Cells(1, 17) = "Value"
+    ws.Cells(2, 15) = "Greatest % increase"
+    
+    'fill in info we gathered for our challenge while looping through worksheet
+    ws.Cells(2, 16) = GPCTicker
+    ws.Cells(2, 17) = GreatestPercentChange
+    ws.Cells(2, 17).NumberFormat = "0.00%"
+    ws.Cells(3, 15) = "Greatest % decrease"
+    ws.Cells(3, 16) = LPCTicker
+    ws.Cells(3, 17) = LeastPercentChange
+    ws.Cells(3, 17).NumberFormat = "0.00%"
+    ws.Cells(4, 15) = "Greatest Total Volume"
+    ws.Cells(4, 16) = GTVTicker
+    ws.Cells(4, 17) = GreatestTV
+    
+    'make the worksheet look nice
+    ws.Columns("A:Q").AutoFit
+    
+Next ws
+
+End Sub
